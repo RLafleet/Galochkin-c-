@@ -1,0 +1,374 @@
+/*{
+     24. В  листьях  И-ИЛИ  дерева,  соответствующего некоторому
+    множеству  конструкций,  заданы   значения   массы.   Известно
+    максимально допустимое значение массы изделия. Требуется усечь
+    дерево   так,   чтобы   дерево    включало    все    элементы,
+    соответствующие  допустимым  значениям массы,  но не содержало
+    "лишних" вершин.  Конечное дерево выдать на экран в  наглядном
+    виде (13).                
+
+    Назаров Максим Дмитриевич Пс-21
+
+    C++/Visual Studio Code
+
+    -
+}*/
+
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <map>
+#include <fstream>
+#include <sstream>
+
+using namespace std;
+
+class TreeNode
+{
+  public:
+    char data;
+    std::string mass;
+    std::vector<TreeNode *> children;
+
+    TreeNode(char data, std::string mass = "n") : data(data), mass(mass) {}
+};
+
+class Tree
+{
+  public:
+    TreeNode *root;
+
+    Tree(char data)
+    {
+        root = new TreeNode(data);
+    }
+
+    void addChildren(char parentData, char childData)
+    {
+        TreeNode *parent = findNode(root, parentData);
+        TreeNode *child = new TreeNode(childData);
+        parent->children.push_back(child);
+    }
+
+    TreeNode *findNode(TreeNode *node, char data)
+    {
+        if (node == nullptr)
+        {
+            return nullptr;
+        }
+        if (node->data == data)
+        {
+            return node;
+        }
+        for (TreeNode *child : node->children)
+        {
+            TreeNode *found = findNode(child, data);
+            if (found != nullptr)
+            {
+                return found;
+            }
+        }
+        return nullptr;
+    }
+
+    std::vector<char> getLeaves()
+    {
+        std::vector<char> leaves;
+        getLeavesFunc(root, leaves);
+        return leaves;
+    }
+
+    void getLeavesFunc(TreeNode *node, std::vector<char> &leaves)
+    {
+        if (node == nullptr)
+        {
+            return;
+        }
+        if (node->children.size() == 0)
+        {
+            leaves.push_back(node->data);
+            return;
+        }
+        for (TreeNode *child : node->children)
+        {
+            getLeavesFunc(child, leaves);
+        }
+    }
+
+    std::vector<char> getNonLeaves()
+    {
+        std::vector<char> nonLeaves;
+        getNonLeavesFunc(root, nonLeaves);
+        return nonLeaves;
+    }
+
+    void getNonLeavesFunc(TreeNode *node, std::vector<char> &nonLeaves)
+    {
+        if (node == nullptr || node->children.size() == 0)
+        {
+            return;
+        }
+        nonLeaves.push_back(node->data);
+        for (TreeNode *child : node->children)
+        {
+            getNonLeavesFunc(child, nonLeaves);
+        }
+    }
+
+    std::vector<char> getParentsOfLeaves()
+    {
+        std::vector<char> parents;
+        getParentsOfLeavesFunc(root, parents);
+        return parents;
+    }
+
+    void getParentsOfLeavesFunc(TreeNode *node, std::vector<char> &parents)
+    {
+        if (node == nullptr)
+        {
+            return;
+        }
+        if (node->children.size() > 0)
+        {
+            bool hasLeafChild = false;
+            for (TreeNode *child : node->children)
+            {
+                if (child->children.size() == 0)
+                {
+                    hasLeafChild = true;
+                    break;
+                }
+            }
+            if (hasLeafChild)
+            {
+                parents.push_back(node->data);
+            }
+            for (TreeNode *child : node->children)
+            {
+                getParentsOfLeavesFunc(child, parents);
+            }
+        }
+    }
+
+    std::vector<char> getLevel(int level)
+    {
+        std::vector<char> levelNodes;
+        getLevelFunc(root, 0, level, levelNodes);
+        return levelNodes;
+    }
+
+    void getLevelFunc(TreeNode *node, int currentLevel, int targetLevel, std::vector<char> &levelNodes)
+    {
+        if (node == nullptr)
+        {
+            return;
+        }
+        if (currentLevel == targetLevel)
+        {
+            levelNodes.push_back(node->data);
+            return;
+        }
+        for (TreeNode *child : node->children)
+        {
+            getLevelFunc(child, currentLevel + 1, targetLevel, levelNodes);
+        }
+    }
+    void drawTree(std::ofstream &outputFile)
+    {
+        if (root == nullptr)
+        {
+            outputFile << "Tree is empty." << endl;
+            return;
+        }
+        drawTreeFunc(root, "", true, outputFile);
+    }
+
+  private:
+    void drawTreeFunc(TreeNode *node, std::string indent, bool last, std::ofstream &outputFile)
+    {
+        if (node != nullptr)
+        {
+            outputFile << indent;
+            if (last)
+            {
+                outputFile << "\\-";
+                indent += "  ";
+            }
+            else
+            {
+                outputFile << "|-";
+                indent += "| ";
+            }
+            if (node->mass[0] >= '0' && node->mass[0] <= '9')
+            {
+                outputFile << node->data << " <Mass: " << node->mass << ">" << endl;
+            }
+            else
+            {
+                outputFile << node->data << " <State: " << node->mass << ">" << endl;
+            }
+            for (size_t i = 0; i < node->children.size(); ++i)
+            {
+                drawTreeFunc(node->children[i], indent, i == node->children.size() - 1, outputFile);
+            }
+        }
+    }
+};
+
+bool massCheck(const int &mass, int &massConstruction, const int &availableMass)
+{
+    massConstruction += mass;
+    if (massConstruction > availableMass)
+    {
+        massConstruction -= mass;
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+bool readAndBuildTree(Tree &tree, std::ifstream &inputFile, const int &availableMass)
+{
+    std::string line;
+    std::vector<TreeNode *> levelNodes;
+    levelNodes.push_back(tree.root);
+    bool rootMassCheck = false;
+    int massConstruction = 0;
+    int depthLoad = 0;
+    bool depthLoadCheck = true;
+    bool availableLoad = true;
+
+    while (getline(inputFile, line))
+    {
+        int depth = 0;
+        while (line[depth] == '*')
+        {
+            depth++;
+        }
+
+        if (depthLoad >= depth)
+        {
+            depthLoadCheck = true;
+        }
+
+        if (depthLoadCheck)
+        {
+            depthLoad = depth;
+        }
+
+        std::istringstream stream(line.substr(depth));
+        char childData;
+        std::string stateTree;
+
+        int mass;
+        if (!rootMassCheck)
+        {
+            stream >> stateTree;
+            if (stateTree[0] >= '0' && stateTree[0] <= '9')
+            {
+                mass = std::stoi(stateTree);
+                availableLoad = massCheck(mass, massConstruction, availableMass);
+                if (!availableLoad)
+                {
+                    std::cout << "Output file is empty because mass of root mechanism bigger than acceptable for transportation!" << std::endl;
+                    return false;
+                }
+                stateTree = std::to_string(mass);
+            }
+
+            tree.root->mass = stateTree;
+            rootMassCheck = !rootMassCheck;
+        }
+        else if (depthLoad >= depth)
+        {
+            stream >> childData >> stateTree;
+            if (stateTree[0] >= '0' && stateTree[0] <= '9')
+            {
+                mass = std::stoi(stateTree);
+                availableLoad = massCheck(mass, massConstruction, availableMass);
+                stateTree = std::to_string(mass);
+            }
+        }
+
+        if (!availableLoad && depthLoadCheck)
+        {
+            depthLoad = depth;
+            depthLoadCheck = false;
+        }
+
+        if (depth > 0 && availableLoad && depthLoad >= depth)
+        {
+            TreeNode *parent = levelNodes[depth - 1];
+
+            if (!parent)
+            {
+                cerr << "Parent not found for " << childData << endl;
+                continue;
+            }
+
+            TreeNode *child = new TreeNode(childData, stateTree);
+            parent->children.push_back(child);
+
+            if (levelNodes.size() > depth)
+            {
+                levelNodes[depth] = child;
+            }
+            else
+            {
+                levelNodes.push_back(child);
+            }
+        }
+    }
+    return true;
+}
+
+void option()
+{
+    std::string inputFileName;
+    std::string outputFileName;
+    int availableMass = 0;
+
+    // std::cout << "Write input and output files: " <<;
+    // std::cin >> inputFileName >> outputFileName;
+    // std::endl;
+    inputFileName = "input.txt";
+    outputFileName = "output.txt";
+    std::ifstream inputFile(inputFileName);
+    std::ofstream outputFile(outputFileName);
+
+    if (!inputFile || !outputFile)
+    {
+        cerr << "Error opening files. Try again." << endl;
+        return;
+    }
+
+    std::cout << "Enter available mass: ";
+    std::cin >> availableMass;
+
+    if (std::cin.fail())
+    {
+        std::cerr << "Invalid input. Please enter a valid integer." << std::endl;
+        std::cin.clear();
+        return;
+    }
+
+    char treeRoot;
+    bool readAndBuild = false;
+    inputFile >> treeRoot;
+    Tree tree(treeRoot);
+    readAndBuild = readAndBuildTree(tree, inputFile, availableMass);
+    if (readAndBuild)
+    {
+        tree.drawTree(outputFile);
+    }
+}
+
+int main()
+{
+    std::cout << "Hello! " << std::endl;
+    option();
+    std::cout << "Algoritm works!" << std::endl;
+    return 0;
+}
