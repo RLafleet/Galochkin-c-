@@ -288,15 +288,19 @@ bool trim(TreeNode *node, int &maxMass, int &currentMass, bool &changeState, boo
 {
     char name;
     if (node == nullptr)
+    {
         return true;
+    }
 
     if (node->children.empty())
     {
         int nodeMass = stoi(node->mass);
         currentMass = nodeMass;
     }
+
     if (node->mass == "a")
     {
+        cout << "maxMassD " << maxMass << " " << node->minMassD << endl;
         bool state2 = false;
         if (state)
         {
@@ -305,10 +309,13 @@ bool trim(TreeNode *node, int &maxMass, int &currentMass, bool &changeState, boo
         }
         state = false;
         int totalMass = 0;
+        // if (node->maxMassD < maxMass)
+        // {
+        node->maxMassD = maxMass;
+        // }
         for (auto &child : node->children)
         {
             maxMass -= child->minMassD;
-            cout << "check " << child->minMassD << endl;
         }
         for (auto &child : node->children)
         {
@@ -319,24 +326,36 @@ bool trim(TreeNode *node, int &maxMass, int &currentMass, bool &changeState, boo
             {
                 maxMass -= child->minMassD;
             }
+            cout << "totalMass " << totalMass << " " << childMass << endl;
             totalMass += childMass;
         }
         currentMass = totalMass;
+        cout << "currentMass " << currentMass << endl;
     }
     else if (node->mass == "o")
     {
         int mass;
         std::vector<TreeNode *> permissibleChildren;
+        // if (node->maxMassD < maxMass)
+        // {
+        node->maxMassD = maxMass;
+        cout << "ture";
+        // }
         for (auto &child : node->children)
         {
             int childMass = 0;
             changeState = false;
             trim(child, maxMass, childMass, changeState, state);
             changeState = true;
-            cout << "childMass " << childMass << " maxMass " << maxMass << endl;
-            mass = childMass;
+            if (childMass <= maxMass)
+            {
+                mass = childMass;
+            }
+            cout << " " << childMass << " " << maxMass << endl;
             if (childMass > 0 && childMass <= maxMass)
             {
+                cout << "Enter" << endl;
+                changeState = false;
                 permissibleChildren.push_back(child);
             }
         }
