@@ -207,7 +207,6 @@ bool trimTree(TreeNode *node, const int &maxMass, int &currentMass, bool &state,
     {
         int nodeMass = stoi(node->mass);
         node->minMassD = nodeMass;
-        // std::cout << "nodeMass " << nodeMass << std::endl;
         currentMass = nodeMass;
         maximum = nodeMass;
         return true;
@@ -224,7 +223,6 @@ bool trimTree(TreeNode *node, const int &maxMass, int &currentMass, bool &state,
             int childMassMax = 0;
             trimTree(child, maxMass, childMass, state, childMassMax);
             totalMass += childMass;
-            // std::cout << "totalMass " << childMass << std::endl;
             totalMassMax += childMassMax;
         }
 
@@ -240,7 +238,6 @@ bool trimTree(TreeNode *node, const int &maxMass, int &currentMass, bool &state,
 
         node->minMassD = currentMass;
         node->maxMassD = maximum;
-        std::cout << node->minMassD << " " << node->maxMassD << std::endl;
         if (state)
             return true;
         else
@@ -303,7 +300,6 @@ bool trim(TreeNode *node, int &maxMass, int &currentMass, bool &changeState, boo
 
     if (node->mass == "a")
     {
-        cout << "maxMassD " << maxMass << " " << node->minMassD << endl;
         bool state2 = false;
         if (state)
         {
@@ -321,43 +317,32 @@ bool trim(TreeNode *node, int &maxMass, int &currentMass, bool &changeState, boo
         {
             int childMass = 0;
             maxMass += child->minMassD;
-            cout << "               " << maxMass << endl;
             trim(child, maxMass, childMass, changeState, state);
-            cout << node->data << name << state2 << endl;
             if ((state2 && name == node->data) || (changeState && child->mass != "a"))
             {
-                cout << "                            Enter" << endl;
                 maxMass -= child->minMassD;
             }
-            cout << "totalMass " << totalMass << " " << childMass << endl;
             totalMass += childMass;
         }
         currentMass = totalMass;
-        cout << "currentMass " << currentMass << endl;
     }
     else if (node->mass == "o")
     {
         int mass;
         std::vector<TreeNode *> permissibleChildren;
-        // if (node->maxMassD < maxMass)
-        // {
         node->maxMassD = maxMass;
-        // }
         for (auto &child : node->children)
         {
             int childMass = 0;
             changeState = false;
             trim(child, maxMass, childMass, changeState, state);
             changeState = true;
-            // if ((childMass <= maxMass) && ((node->mass != "a") || (childmass <= node->minMassD)))
             if (childMass <= maxMass)
             {
                 mass = childMass;
             }
-            cout << " " << childMass << " " << maxMass << endl;
             if (childMass > 0 && childMass <= maxMass)
             {
-                cout << "Enter" << endl;
                 changeState = false;
                 permissibleChildren.push_back(child);
             }
@@ -421,11 +406,6 @@ bool option()
         dummyMass = 0;
         state = true;
         bool changeState = true;
-        std::cout << std::endl;
-        std::cout << std::endl;
-        std::cout << std::endl;
-        std::cout << std::endl;
-        std::cout << std::endl;
         trim(tree.root, maxPermissibleMass, dummyMass, changeState, state);
         tree.drawTree(outputFile);
         return true;
